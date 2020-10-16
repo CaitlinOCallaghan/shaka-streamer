@@ -69,6 +69,7 @@ release = streamer.__version__
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',  # Support for Google-style docstrings
     'sphinx.ext.viewcode',
 ]
 

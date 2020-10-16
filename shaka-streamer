@@ -32,6 +32,7 @@ import time
 import yaml
 
 import streamer
+import streamer.util
 
 
 class CustomArgParseFormatter(
@@ -65,25 +66,35 @@ def main():
   parser.add_argument('-c', '--cloud_url',
                       default=None,
                       help='The Google Cloud Storage or Amazon S3 URL to ' +
-                           'upload to.  (Starts with gs:// or s3://)')
+                           'upload to.  (Starts with gs:// or s3://) ' +
+                           'Requires a local output folder in -o.')
   parser.add_argument('-o', '--output',
                       default='output_files',
-                      help='The output folder to write files to. ' +
-                           'Used even if uploading to cloud storage.')
+                      help='The output folder to write files to, or an HTTP ' +
+                           'or HTTPS URL where files will be PUT.')
   parser.add_argument('--skip_deps_check',
                       action='store_true',
                       default=False,
                       help='Skip checks for dependencies and their versions. ' +
                            'This can be useful for testing pre-release ' +
                            'versions of FFmpeg or Shaka Packager.')
+  parser.add_argument('--oauth',
+                      default=None,
+                      help='Specify an OAuth token for authentication to HTTP '
+                           'or HTTPS output URLs.');
+  parser.add_argument('--url-parameters',
+                      default=None,
+                      help='Specify URL parameters for authentication to HTTP '
+                           'or HTTPS output URLs.');
 
   args = parser.parse_args()
 
-  # Check if the directory for outputted Packager files exists, and if it
-  # does, delete it and remake a new one.
-  if os.path.exists(args.output):
-    shutil.rmtree(args.output)
-  os.mkdir(args.output)
+  if not streamer.util.is_url(args.output):
+    # Check if the directory for outputted Packager files exists, and if it
+    # does, delete it and remake a new one.
+    if os.path.exists(args.output):
+      shutil.rmtree(args.output)
+    os.mkdir(args.output)
 
   controller = streamer.controller_node.ControllerNode()
 
@@ -105,7 +116,8 @@ def main():
   try:
     with controller.start(args.output, input_config_dict, pipeline_config_dict,
                           bitrate_config_dict, args.cloud_url,
-                          not args.skip_deps_check):
+                          not args.skip_deps_check, args.oauth,
+                          args.url_parameters):
       # Sleep so long as the pipeline is still running.
       while True:
         status = controller.check_status()

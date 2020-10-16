@@ -33,6 +33,8 @@ this document is for you.
 .. _config_files/: https://github.com/google/shaka-streamer/tree/master/config_files
 
 
+.. _input-configs:
+
 Input Configs
 -------------
 
@@ -53,6 +55,8 @@ files.
   :exclude-members: InputConfig, Input
 
 
+.. _pipeline-configs:
+
 Pipeline Configs
 ----------------
 
@@ -68,6 +72,8 @@ resolutions, availability window, and/or encryption settings.
 .. automodule:: streamer.pipeline_configuration
   :exclude-members: PipelineConfig
 
+
+.. _bitrate-configs:
 
 Custom Bitrate and Resolution Configs
 -------------------------------------

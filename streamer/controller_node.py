@@ -30,7 +30,7 @@ import sys
 import tempfile
 import uuid
 
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
@@ -40,6 +40,7 @@ from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputSt
 from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
+from streamer.util import is_url
 
 
 class ControllerNode(object):
@@ -95,18 +96,45 @@ class ControllerNode(object):
 
     return path
 
-  def start(self, output_dir: str,
+  def start(self, output_location: str,
             input_config_dict: Dict[str, Any],
             pipeline_config_dict: Dict[str, Any],
             bitrate_config_dict: Dict[Any, Any] = {},
-            bucket_url: Union[str, None] = None,
-            check_deps: bool = True) -> 'ControllerNode':
+            bucket_url: Optional[str] = None,
+            check_deps: bool = True,
+            oauth: Optional[str] = None,
+            url_parameters: Optional[str] = None) -> 'ControllerNode':
     """Create and start all other nodes.
 
-    :raises: `RuntimeError` if the controller has already started.
-    :raises: :class:`streamer.configuration.ConfigError` if the configuration is
-             invalid.
+    Args:
+      output_location (str): Either a local path to an existing output folder,
+          or an HTTP URL where the files should be PUT.
+      input_config_dict (Dict): The input configuration, as a dictionary,
+          following the structure of :ref:`InputConfig <input-configs>`
+      pipeline_config_dict (Dict): The pipeline configuration, as a dictionary,
+          following the structure of :ref:`PipelineConfig <pipeline-configs>`
+      bitrate_config_dict (Dict, Optional): The bitrate configuration, as a
+          dictionary, following the structure of
+          :ref:`BitrateConfig <bitrate-configs>`
+      bucket_url (str, Optional): A cloud storage bucket URL to upload output
+          to.  *(Incompatible with HTTP URL in output_location)*
+      check_deps (bool, Optional): If True, check the versions of runtime
+          dependencies like FFmpeg and Shaka Packager.  *(Defaults to True)*
+      oauth (str, Optional): If specified, add this value as an OAuth token for
+          HTTP URL outputs.
+      url_parameters (str, Optional): If specified, add this value as URL
+          parameters for HTTP URL outputs.
+
+    Raises:
+      RuntimeError: if the controller has already started
+      RuntimeError: if an invalid combination of configurations is given
+      RuntimeError: if required dependency versions cannot be found
+      streamer.configuration.ConfigError: if the configuration is invalid
+
     """
+
+    # TODO: Use unique exception classes where we now use RuntimeErrors
+    # TODO: Check Packager version for HTTP PUT support once it is released
 
     if self._nodes:
       raise RuntimeError('Controller already started!')
@@ -130,7 +158,6 @@ class ControllerNode(object):
         # This is only required if the user asked for upload to cloud storage.
         _check_version('Google Cloud SDK', ['gcloud', '--version'], (212, 0, 0))
 
-
     if bucket_url:
       # If using cloud storage, make sure the user is logged in and can access
       # the destination, independent of the version check above.
@@ -148,6 +175,22 @@ class ControllerNode(object):
     input_config = InputConfig(input_config_dict)
     pipeline_config = PipelineConfig(pipeline_config_dict)
     self._pipeline_config = pipeline_config
+
+    if is_url(output_location):
+      # Check some restrictions and other details on HTTP output.
+      if not self._pipeline_config.segment_per_file:
+        raise RuntimeError(
+            'For HTTP PUT uploads, the pipeline segment_per_file setting ' +
+            'must be set to True!')
+
+      if bucket_url:
+        raise RuntimeError(
+            'Cloud bucket upload is incompatible with HTTP PUT support. ' +
+            'Just use an HTTP output location with --oauth!')
+
+      # Note that we remove the trailing slash from the output location, because
+      # otherwise GCS would create a subdirectory whose name is "".
+      output_location = output_location.rstrip('/')
 
     outputs: List[OutputStream] = []
     for input in input_config.inputs:
@@ -201,14 +244,16 @@ class ControllerNode(object):
                                       outputs))
 
     self._nodes.append(PackagerNode(pipeline_config,
-                                    output_dir,
-                                    outputs))
+                                    output_location,
+                                    outputs,
+                                    oauth,
+                                    url_parameters))
 
     if bucket_url:
       cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
       os.mkdir(cloud_temp_dir)
 
-      self._nodes.append(CloudNode(output_dir,
+      self._nodes.append(CloudNode(output_location,
                                    bucket_url,
                                    cloud_temp_dir,
                                    self.is_vod()))
