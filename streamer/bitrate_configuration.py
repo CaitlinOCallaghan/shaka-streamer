@@ -346,6 +346,15 @@ DEFAULT_VIDEO_RESOLUTIONS = {
       'av1': '18M',
     },
   }),
+  'oculus-2880': VideoResolution({
+    'max_width': 2880,
+    'max_height': 2880,
+    'bitrates': {
+      'h264': '1M',
+      'vp9': '1M',
+      'av1': '1M',
+    },
+  }),
 }
 
 

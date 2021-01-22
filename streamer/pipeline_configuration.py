@@ -141,10 +141,11 @@ class PipelineConfig(configuration.Base):
 
   See documentation here: https://trac.ffmpeg.org/wiki/HWAccelIntro
   """
+  skip_transcoding = configuration.Field(bool, default=False).cast()
+  """If true, skip encoding. This is meant for live premieres that use pre-encoded segments"""
 
   resolutions = configuration.Field(
-      List[bitrate_configuration.VideoResolutionName],
-      required=True).cast()
+      List[bitrate_configuration.VideoResolutionName]).cast()
   """A list of resolution names to encode.
 
   Any resolution greater than the input resolution will be ignored, to avoid

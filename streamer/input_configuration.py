@@ -58,6 +58,7 @@ class MediaType(enum.Enum):
   AUDIO = 'audio'
   VIDEO = 'video'
   TEXT = 'text'
+  HLS_PLAYLIST = 'hls_playlist'
 
 
 class Input(configuration.Base):
@@ -252,6 +253,12 @@ class Input(configuration.Base):
     """
 
     return self._pipe or self.name
+
+  def get_path_for_passthrough(self) -> str:
+    """Get the path which the passthrough node will use to read the input.
+    """
+
+    return self.name
 
   def get_stream_specifier(self) -> str:
     """Get an FFmpeg stream specifier for this input.
