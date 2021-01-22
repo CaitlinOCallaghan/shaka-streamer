@@ -38,6 +38,7 @@ from streamer.input_configuration import InputConfig, InputType, MediaType
 from streamer.node_base import NodeBase, ProcessStatus
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.packager_node import PackagerNode
+from streamer.passthrough_node import PassthroughNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.util import is_url
@@ -225,6 +226,14 @@ class ControllerNode(object):
                                              video_codec,
                                              output_resolution))
 
+      elif input.media_type == MediaType.HLS_PLAYLIST:
+        for video_codec in pipeline_config.video_codecs:
+          for output_resolution in pipeline_config.get_resolutions():
+            outputs.append(VideoOutputStream(self._create_pipe(),
+                                  input,
+                                  video_codec,
+                                  output_resolution))
+
       elif input.media_type == MediaType.TEXT:
         if input.name.endswith('.vtt') or input.name.endswith('.ttml'):
           # If the input is a VTT or TTML file, pass it directly to the packager
@@ -238,8 +247,13 @@ class ControllerNode(object):
           text_pipe = self._create_pipe('.vtt')
 
         outputs.append(TextOutputStream(text_pipe, input))
-
-    self._nodes.append(TranscoderNode(input_config,
+    
+    if pipeline_config.skip_transcoding:
+      self._nodes.append(PassthroughNode(input_config,
+                                        pipeline_config,
+                                        outputs))
+    else:
+      self._nodes.append(TranscoderNode(input_config,
                                       pipeline_config,
                                       outputs))
 

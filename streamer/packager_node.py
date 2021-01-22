@@ -119,50 +119,58 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         'packager',
     ]
 
-    args += [self._setup_stream(stream) for stream in self._output_streams]
-
-    if self._pipeline_config.quiet:
+    if self._pipeline_config.skip_transcoding:
       args += [
-          '--quiet',  # Only output error logs
+          '--io_block_size', '65536',
       ]
+      args += [self._setup_stream(stream) for stream in self._output_streams]
+      args += self._setup_manifest_format()
+    
+    if self._pipeline_config.skip_transcoding == False:
+      args += [self._setup_stream(stream) for stream in self._output_streams]
 
-    args += [
-        # Segment duration given in seconds.
-        '--segment_duration', str(self._pipeline_config.segment_size),
-    ]
+      if self._pipeline_config.quiet:
+        args += [
+            '--quiet',  # Only output error logs
+        ]
 
-    if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
       args += [
-          # Number of seconds the user can rewind through backwards.
-          '--time_shift_buffer_depth',
-          str(self._pipeline_config.availability_window),
-          # Number of segments preserved outside the current live window.
-          # NOTE: This must not be set below 3, or the first segment in an HLS
-          # playlist may become unavailable before the playlist is updated.
-          '--preserved_segments_outside_live_window', '3',
-          # Number of seconds of content encoded/packaged that is ahead of the
-          # live edge.
-          '--suggested_presentation_delay',
-          str(self._pipeline_config.presentation_delay),
-          # Number of seconds between manifest updates.
-          '--minimum_update_period',
-          str(self._pipeline_config.update_period),
+          # Segment duration given in seconds.
+          '--segment_duration', str(self._pipeline_config.segment_size),
       ]
 
-    if is_url(self._output_dir):
-      headers = [
-        'Cache-Control: no-store, no-transform'
-      ]
+      if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
+        args += [
+            # Number of seconds the user can rewind through backwards.
+            '--time_shift_buffer_depth',
+            str(self._pipeline_config.availability_window),
+            # Number of segments preserved outside the current live window.
+            # NOTE: This must not be set below 3, or the first segment in an HLS
+            # playlist may become unavailable before the playlist is updated.
+            '--preserved_segments_outside_live_window', '3',
+            # Number of seconds of content encoded/packaged that is ahead of the
+            # live edge.
+            '--suggested_presentation_delay',
+            str(self._pipeline_config.presentation_delay),
+            # Number of seconds between manifest updates.
+            '--minimum_update_period',
+            str(self._pipeline_config.update_period),
+        ]
 
-      if self._oauth:
-        headers += ['Authorization: Bearer ' + self._oauth]
+      if is_url(self._output_dir):
+        headers = [
+          'Cache-Control: no-store, no-transform'
+        ]
 
-      args += ['--http_upload_headers', '\n'.join(headers)]
+        if self._oauth:
+          headers += ['Authorization: Bearer ' + self._oauth]
 
-      if self._url_parameters:
-        args += ['--http_upload_parameters', self._url_parameters]
+        args += ['--http_upload_headers', '\n'.join(headers)]
 
-    args += self._setup_manifest_format()
+        if self._url_parameters:
+          args += ['--http_upload_parameters', self._url_parameters]
+
+        args += self._setup_manifest_format()
 
     if self._pipeline_config.encryption.enable:
       args += self._setup_encryption()
