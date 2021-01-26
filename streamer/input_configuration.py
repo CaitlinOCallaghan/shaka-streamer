@@ -58,7 +58,6 @@ class MediaType(enum.Enum):
   AUDIO = 'audio'
   VIDEO = 'video'
   TEXT = 'text'
-  HLS_PLAYLIST = 'hls_playlist'
 
 
 class Input(configuration.Base):

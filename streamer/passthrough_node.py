@@ -15,7 +15,7 @@
 
 """A module that pushes a pre-encoded input to ffmpeg in order to generate a live manifest."""
 
-from streamer.input_configuration import InputConfig
+from streamer.input_configuration import InputConfig, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
 from streamer.output_stream import OutputStream
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
@@ -53,19 +53,44 @@ class PassthroughNode(PolitelyWaitOnFinish):
     if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
       args += ['-re']
       
-    # The input name always comes after the applicable input arguments.
     for input in self._input_config.inputs:
       args += [  
-         # The input itself.
-        '-i', input.get_path_for_passthrough(),
-        '-c:v', 'copy',
-        '-an',
-        '-f', 'mpegts'
+        # The input itself.
+      '-i', input.get_path_for_passthrough()
       ]
 
-    for output_stream in self._outputs:
-      # The output pipe.
-      args += [output_stream.pipe]
+      for output_stream in self._outputs:
+        if output_stream.input != input:
+          # Skip outputs that don't match this exact input object.
+          continue
+        if output_stream.pipe is None:
+          # This input won't be transcoded.  This is common for VTT text input.
+          continue
+
+        if input.media_type == MediaType.AUDIO:
+          args += self._copy_audio()
+        elif input.media_type == MediaType.VIDEO:
+          args += self._copy_video()
+        args += ['-f', 'mpegts',]
+
+        # The output pipe.
+        args += [output_stream.pipe]
 
     env = {}
     self._process = self._create_process(args, env)
+
+  def _copy_audio(self) -> List[str]:
+    args: List[str] = [
+        # No video encoding for video.
+        '-vn',
+        '-c:a', 'copy',
+    ]
+    return args
+
+  def _copy_video(self) -> List[str]:
+    args: List[str] = [
+        # No video encoding for audio.
+        '-an',
+        '-c:v', 'copy',
+    ]
+    return args

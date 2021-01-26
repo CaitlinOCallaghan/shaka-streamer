@@ -14,6 +14,7 @@
 
 """A module to contain auto-detection logic; based on ffprobe."""
 
+import re
 import shlex
 import subprocess
 import time
@@ -106,7 +107,7 @@ def get_frame_rate(input: Input) -> Optional[float]:
   # This string is the framerate in the form of a fraction, such as '24/1' or
   # '30000/1001'.  We must split it into pieces and do the division to get a
   # float.
-  fraction = frame_rate_string.split('/')
+  fraction = fraction = re.split(r'\W+', frame_rate_string)
   if len(fraction) == 1:
     frame_rate = float(fraction[0])
   else:
@@ -132,8 +133,8 @@ def get_resolution(input: Input) -> Optional[VideoResolutionName]:
   # This is the resolution of the video in the form of 'WIDTH|HEIGHT'.  For
   # example, '1920|1080'.  We have to split up width and height and match that
   # to a named resolution.
-  width_string, height_string = resolution_string.split('|')
-  width, height = int(width_string), int(height_string)
+  dimensions = re.split(r'\W+', resolution_string)
+  width, height = int(dimensions[0]), int(dimensions[1])
 
   for bucket in VideoResolution.sorted_values():
     # The first bucket this fits into is the one.

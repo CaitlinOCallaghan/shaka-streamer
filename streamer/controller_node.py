@@ -226,14 +226,6 @@ class ControllerNode(object):
                                              video_codec,
                                              output_resolution))
 
-      elif input.media_type == MediaType.HLS_PLAYLIST:
-        for video_codec in pipeline_config.video_codecs:
-          for output_resolution in pipeline_config.get_resolutions():
-            outputs.append(VideoOutputStream(self._create_pipe(),
-                                  input,
-                                  video_codec,
-                                  output_resolution))
-
       elif input.media_type == MediaType.TEXT:
         if input.name.endswith('.vtt') or input.name.endswith('.ttml'):
           # If the input is a VTT or TTML file, pass it directly to the packager

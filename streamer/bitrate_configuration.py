@@ -350,7 +350,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'max_width': 2880,
     'max_height': 2880,
     'bitrates': {
-      'h264': '1M',
+      'h264': '20M',
       'vp9': '1M',
       'av1': '1M',
     },
