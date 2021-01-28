@@ -124,6 +124,17 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
           '--io_block_size', '65536',
       ]
       args += [self._setup_stream(stream) for stream in self._output_streams]
+
+      if self._pipeline_config.quiet:
+        args += [
+            '--quiet',  # Only output error logs
+        ]
+
+      args += [
+          # Segment duration given in seconds.
+          '--segment_duration', str(self._pipeline_config.segment_size),
+      ]
+
       args += self._setup_manifest_format()
     
     if self._pipeline_config.skip_transcoding == False:

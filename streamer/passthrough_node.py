@@ -72,6 +72,7 @@ class PassthroughNode(PolitelyWaitOnFinish):
         elif input.media_type == MediaType.VIDEO:
           args += self._copy_video()
         args += ['-f', 'mpegts',]
+        args += ['-muxpreload', '0', '-muxdelay', '0']
 
         # The output pipe.
         args += [output_stream.pipe]
@@ -92,5 +93,6 @@ class PassthroughNode(PolitelyWaitOnFinish):
         # No video encoding for audio.
         '-an',
         '-c:v', 'copy',
+        '-bsf:v', 'h264_mp4toannexb',
     ]
     return args

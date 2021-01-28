@@ -305,9 +305,9 @@ class TranscoderNode(PolitelyWaitOnFinish):
         # Without an explicit fragment duration, the output of FFmpeg contains
         # single large MP4 boxes that Shaka Packager can't consume from a pipe.
         # FFmpeg fragment duration is in microseconds.
-        '-frag_duration', str(self._pipeline_config.segment_size * 1e6),
+        # '-frag_duration', str(self._pipeline_config.segment_size * 1e6),
         # Set minimum and maximum GOP length.
-        '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),
+        # '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),
         # Set video filters.
         '-vf', ','.join(filters),
     ]
