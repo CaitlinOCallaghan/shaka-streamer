@@ -236,6 +236,8 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
           # Generate HLS playlist file(s).
           '--hls_master_playlist_output',
           os.path.join(self._output_dir, self._pipeline_config.hls_output),
+          '--hls_base_url',
+          self._pipeline_config.hls_base_url,
       ]
     return args
 

@@ -187,6 +187,12 @@ class PipelineConfig(configuration.Base):
   hls_output = configuration.Field(str, default='hls.m3u8').cast()
   """Output filename for the HLS master playlist, if created."""
 
+  hls_base_url = configuration.Field(str, default='').cast()
+  """Base url for HLS segments, if created.
+  
+  This will generate an absolute path/url for segments in the playlist
+  """
+
   segment_folder = configuration.Field(str, default='').cast()
   """Sub-folder for segment output (or blank for none)."""
 
