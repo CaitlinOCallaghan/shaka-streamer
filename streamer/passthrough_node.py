@@ -38,7 +38,6 @@ class PassthroughNode(PolitelyWaitOnFinish):
         # Do not prompt for output files that already exist. Since we created
         # the named pipe in advance, it definitely already exists. A prompt
         # would block ffmpeg to wait for user input.
-        '-hide_banner',
         '-y',
     ]
 
@@ -71,7 +70,9 @@ class PassthroughNode(PolitelyWaitOnFinish):
           args += self._copy_audio()
         elif input.media_type == MediaType.VIDEO:
           args += self._copy_video()
-        args += ['-f', 'mpegts',]
+        elif input.media_type == MediaType.TEXT:
+          args += self._copy_text()
+
         args += ['-muxpreload', '0', '-muxdelay', '0']
 
         # The output pipe.
@@ -85,6 +86,7 @@ class PassthroughNode(PolitelyWaitOnFinish):
         # No video encoding for video.
         '-vn',
         '-c:a', 'copy',
+        '-f', 'mpegts',
     ]
     return args
 
@@ -93,6 +95,12 @@ class PassthroughNode(PolitelyWaitOnFinish):
         # No video encoding for audio.
         '-an',
         '-c:v', 'copy',
-        '-bsf:v', 'h264_mp4toannexb',
+        '-f', 'mpegts',
     ]
     return args
+
+  def _copy_text(self) -> List[str]:
+    return [
+        # Output WebVTT.
+        '-f', 'webvtt',
+    ]
