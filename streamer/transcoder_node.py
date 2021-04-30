@@ -90,6 +90,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
             # 720p PPM frame is 2.7MB, and a 1080p PPM is 6.2MB.  The entire
             # queue, when full, must fit into memory.
             '-thread_queue_size', '200',
+            '-re',
         ]
 
       if input.start_time:
@@ -130,15 +131,23 @@ class TranscoderNode(PolitelyWaitOnFinish):
         # Map arguments must be repeated for each output file.
         args += map_args
 
-        if input.media_type == MediaType.AUDIO:
-          assert(isinstance(output_stream, AudioOutputStream))
-          args += self._encode_audio(output_stream, input)
-        elif input.media_type == MediaType.VIDEO:
-          assert(isinstance(output_stream, VideoOutputStream))
-          args += self._encode_video(output_stream, input)
+        if self._pipeline_config.transmux_only: 
+          if input.media_type == MediaType.AUDIO:
+            args += self._copy_audio()
+          elif input.media_type == MediaType.VIDEO:
+            args += self._copy_video()
+          elif input.media_type == MediaType.TEXT:
+            args += self._copy_text()
         else:
-          assert(isinstance(output_stream, TextOutputStream))
-          args += self._encode_text(output_stream, input)
+          if input.media_type == MediaType.AUDIO:
+            assert(isinstance(output_stream, AudioOutputStream))
+            args += self._encode_audio(output_stream, input)
+          elif input.media_type == MediaType.VIDEO:
+            assert(isinstance(output_stream, VideoOutputStream))
+            args += self._encode_video(output_stream, input)
+          else:
+            assert(isinstance(output_stream, TextOutputStream))
+            args += self._encode_text(output_stream, input)
 
         # The output pipe.
         args += [output_stream.pipe]
@@ -314,6 +323,30 @@ class TranscoderNode(PolitelyWaitOnFinish):
     return args
 
   def _encode_text(self, stream: TextOutputStream, input: Input) -> List[str]:
+    return [
+        # Output WebVTT.
+        '-f', 'webvtt',
+    ]
+
+  def _copy_audio(self) -> List[str]:
+    args: List[str] = [
+        # No video encoding.
+        '-vn',
+        '-c:a', 'copy',
+        '-f', 'mpegts',
+    ]
+    return args
+
+  def _copy_video(self) -> List[str]:
+    args: List[str] = [
+        # No audoio encoding.
+        '-an',
+        '-c:v', 'copy',
+        '-f', 'mpegts',
+    ]
+    return args
+
+  def _copy_text(self) -> List[str]:
     return [
         # Output WebVTT.
         '-f', 'webvtt',

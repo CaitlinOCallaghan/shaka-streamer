@@ -72,6 +72,11 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         'packager',
     ]
 
+    if self._pipeline_config.transmux_only:
+      args += [
+          '--io_block_size', '65536'
+      ]
+
     args += [self._setup_stream(stream) for stream in self._output_streams]
 
     if self._pipeline_config.quiet:

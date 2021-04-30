@@ -232,6 +232,12 @@ class PipelineConfig(configuration.Base):
   See documentation here: https://trac.ffmpeg.org/wiki/HWAccelIntro
   """
 
+  transmux_only = configuration.Field(bool, default=False).cast()
+  """ If true, skip transcoding. 
+  
+  This is meant for live premieres that use pre-encoded segments
+  """
+
   resolutions = configuration.Field(
       List[bitrate_configuration.VideoResolutionName],
       required=True).cast()
